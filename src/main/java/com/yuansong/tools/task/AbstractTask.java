@@ -1,9 +1,10 @@
 package com.yuansong.tools.task;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public abstract class AbstractTask implements Runnable {
 	
@@ -17,24 +18,24 @@ public abstract class AbstractTask implements Runnable {
 	@Override
 	public void run() {		
 		//生成任务ID
-		String taskId = this.getTaskId();
+		String taskId = this.createTaskId();
 		this.prefixExec(taskId);
 		
 		ExecutorService exec = Executors.newSingleThreadExecutor();
-	
-		Future<?> f = exec.submit(new Runnable() {
-			@Override
-			public void run() {
-				job();
-			}
-		});
 		
-		String content = "";
 		try {
-			f.get(this.getTimeout() > 0 ? this.getTimeout() : AbstractTask.DEFAULT_TIMEOUT, TimeUnit.SECONDS);
-			content = "complete";
-		} catch (Exception e) {
+			exec.submit(new Runnable() {
+				@Override
+				public void run() {
+					job();
+				}
+			}).get(this.getTimeout() > 0 ? this.getTimeout() : AbstractTask.DEFAULT_TIMEOUT, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
 			this.handleError(e, taskId);
+		} catch (ExecutionException e) {
+			this.handleError(e, taskId);
+		} catch (TimeoutException e) {
+			this.handleError(new RuntimeException("timeout"), taskId);
 		} finally {
 			exec.shutdown();
 			try {
@@ -44,7 +45,7 @@ public abstract class AbstractTask implements Runnable {
 			} catch (InterruptedException e) {
 				exec.shutdownNow();
 			}
-			this.suffixExec(taskId, content);
+			this.suffixExec(taskId);
 		}
 	}
 	
@@ -55,7 +56,7 @@ public abstract class AbstractTask implements Runnable {
 	 */
 	protected abstract void handleError(Exception e, String taskId);
 	
-	protected abstract String getTaskId();
+	protected abstract String createTaskId();
 	
 	/**
 	 * Task类型（相同类型任务的唯一标记）
@@ -100,7 +101,7 @@ public abstract class AbstractTask implements Runnable {
 	 * 任务后置执行内容
 	 * @param taskId 任务执行ID
 	 */
-	protected void suffixExec(String taskId, String content) {
+	protected void suffixExec(String taskId) {
 		this.running = false;
 	}
 	/**
