@@ -18,10 +18,10 @@ public abstract class AbstractTask implements Runnable {
 	public void run() {		
 		//生成任务ID
 		String taskId = this.getTaskId();
-		
 		this.prefixExec(taskId);
 		
 		ExecutorService exec = Executors.newSingleThreadExecutor();
+	
 		Future<?> f = exec.submit(new Runnable() {
 			@Override
 			public void run() {
@@ -36,6 +36,14 @@ public abstract class AbstractTask implements Runnable {
 		} catch (Exception e) {
 			this.handleError(e, taskId);
 		} finally {
+			exec.shutdown();
+			try {
+				if(!exec.awaitTermination(1000L, TimeUnit.MILLISECONDS)) {
+					exec.shutdownNow();
+				}
+			} catch (InterruptedException e) {
+				exec.shutdownNow();
+			}
 			this.suffixExec(taskId, content);
 		}
 	}
