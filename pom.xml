@@ -22,7 +22,6 @@
         <url>https://raw.github.com/deansquirrel/maven-jrepository/master</url>
     </repository>
   </repositories>
-  
  
   <dependencies>
    <!--  <dependency>
