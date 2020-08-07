@@ -57,7 +57,7 @@
     -->
     
     <build>  
-    <finalName>jtools-task-${project.artifactId}-${project.version}</finalName> 
+    <finalName>${project.artifactId}-${project.version}</finalName> 
     <plugins>
         <plugin>
             <artifactId>maven-deploy-plugin</artifactId>
