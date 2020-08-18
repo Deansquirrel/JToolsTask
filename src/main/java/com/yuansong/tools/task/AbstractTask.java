@@ -1,14 +1,11 @@
 package com.yuansong.tools.task;
 
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 public abstract class AbstractTask implements Runnable {
 	
-	protected static final long DEFAULT_TIMEOUT = 60 * 60 * 12;
+	protected static final long DEFAULT_TIMEOUT = 1L * 60 * 60;
 	
 	protected static final String DEFAULT_CRON = "0 0/5 * * * ?";
 	
@@ -21,32 +18,57 @@ public abstract class AbstractTask implements Runnable {
 		String taskId = this.createTaskId();
 		this.prefixExec(taskId);
 		
-		ExecutorService exec = Executors.newSingleThreadExecutor();
-		
 		try {
-			exec.submit(new Runnable() {
+			TimeoutUtil.process(new Runnable() {
 				@Override
 				public void run() {
 					job();
 				}
-			}).get(this.getTimeout() > 0 ? this.getTimeout() : AbstractTask.DEFAULT_TIMEOUT, TimeUnit.SECONDS);
-		} catch (InterruptedException e) {
+			}, this.getTimeout());
+		}  catch (InterruptedException e) {
 			this.handleError(e, taskId);
 		} catch (ExecutionException e) {
 			this.handleError(e, taskId);
 		} catch (TimeoutException e) {
 			this.handleError(new RuntimeException("timeout"), taskId);
 		} finally {
-			exec.shutdown();
-			try {
-				if(!exec.awaitTermination(1000L, TimeUnit.MILLISECONDS)) {
-					exec.shutdownNow();
-				}
-			} catch (InterruptedException e) {
-				exec.shutdownNow();
-			}
 			this.suffixExec(taskId);
 		}
+		
+//		try {
+//			this.job();
+//		} catch(Exception e) {
+//			this.handleError(e, taskId);
+//		} finally {
+//			this.suffixExec(taskId);
+//		}
+		
+//		ExecutorService exec = Executors.newSingleThreadExecutor();
+//		
+//		try {
+//			exec.submit(new Runnable() {
+//				@Override
+//				public void run() {
+//					job();
+//				}
+//			}).get((this.getTimeout() > 0L ? this.getTimeout() : AbstractTask.DEFAULT_TIMEOUT), TimeUnit.SECONDS);
+//		} catch (InterruptedException e) {
+//			this.handleError(e, taskId);
+//		} catch (ExecutionException e) {
+//			this.handleError(e, taskId);
+//		} catch (TimeoutException e) {
+//			this.handleError(new RuntimeException("timeout"), taskId);
+//		} finally {
+//			exec.shutdown();
+//			try {
+//				if(!exec.awaitTermination(1000L, TimeUnit.MILLISECONDS)) {
+//					exec.shutdownNow();
+//				}
+//			} catch (InterruptedException e) {
+//				exec.shutdownNow();
+//			}
+//			this.suffixExec(taskId);
+//		}
 	}
 	
 	/**
@@ -79,7 +101,7 @@ public abstract class AbstractTask implements Runnable {
 	 * 单次任务超时时间（秒）
 	 * @return
 	 */
-	public abstract int getTimeout();
+	public abstract long getTimeout();
 	
 	/**
 	 * 任务默认运行时间，当配置的时间无效时使用
