@@ -1,9 +1,18 @@
 package com.yuansong.tools.task;
 
+import java.text.MessageFormat;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.yuansong.tools.common.CommonTool;
+import com.yuansong.tools.common.ExceptionTool;
+
 public abstract class AbstractTask implements Runnable {
+	
+	private static final Logger logger = LoggerFactory.getLogger(AbstractTask.class);
 	
 	protected static final long DEFAULT_TIMEOUT = 1L * 60 * 60;
 	
@@ -13,10 +22,22 @@ public abstract class AbstractTask implements Runnable {
 	private boolean running = false;
 
 	@Override
-	public void run() {		
+	public void run() {
 		//生成任务ID
-		String taskId = this.createTaskId();
-		this.prefixExec(taskId);
+		String taskId = "";
+		
+		try {
+			taskId = this.createTaskId();			
+		} catch(Exception e) {
+			logger.error("get taskId error:" + ExceptionTool.getStackTrace(e));
+			taskId = CommonTool.UUID();
+		}
+		try {
+			this.prefixExec(taskId);	
+		} catch(Exception e) {
+			logger.error(MessageFormat.format("prefix exec error: {0} {1} {2}", this.getType(), taskId, ExceptionTool.getStackTrace(e)));
+			return;
+		}
 		
 		try {
 			TimeoutUtil.process(new Runnable() {
@@ -32,7 +53,11 @@ public abstract class AbstractTask implements Runnable {
 		} catch (TimeoutException e) {
 			this.handleError(new RuntimeException("timeout"), taskId);
 		} finally {
-			this.suffixExec(taskId);
+			try {
+				this.suffixExec(taskId);				
+			} catch(Exception e) {
+				logger.error(MessageFormat.format("suffix exec error: {0} {1} {2}", this.getType(), taskId, ExceptionTool.getStackTrace(e)));
+			}
 		}
 		
 //		try {
