@@ -1,4 +1,4 @@
-package com.yuansong.tools.task;
+package com.yuansong.tools.task.his;
 
 import java.text.MessageFormat;
 import java.util.Map;
@@ -14,9 +14,9 @@ import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 @Component
-public class DynamicTaskManager {
+public class DynamicTaskManagerHis {
 	
-	private static final Logger logger = LoggerFactory.getLogger(DynamicTaskManager.class);
+	private static final Logger logger = LoggerFactory.getLogger(DynamicTaskManagerHis.class);
 
 	@Autowired
 	private ThreadPoolTaskScheduler threadPoolTaskScheduler;
@@ -30,7 +30,7 @@ public class DynamicTaskManager {
 	//运行时间缓存
 	private Map<String, String> cronMap;
 	
-	public DynamicTaskManager() {
+	public DynamicTaskManagerHis() {
 		futureMap = new ConcurrentHashMap<String, ScheduledFuture<?>>();
 		taskMap = new ConcurrentHashMap<String, AbstractTask>();
 		cronMap = new ConcurrentHashMap<String, String>();
