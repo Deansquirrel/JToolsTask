@@ -5,8 +5,9 @@ public interface IDynamicTaskManager {
 	/**
 	 * 添加任务
 	 * @param task
+	 * @throws Exception 
 	 */
-	public void addTask(IDynamicTask task);
+	public void addTask(IDynamicTask task) throws Exception;
 	
 	/**
 	 * 移除任务
@@ -23,8 +24,9 @@ public interface IDynamicTaskManager {
 	/**
 	 * 恢复任务
 	 * @param name
+	 * @throws Exception 
 	 */
-	public void resumeTask(String name);
+	public void resumeTask(String name) throws Exception;
 	
 	/**
 	 * 任务是否运行中

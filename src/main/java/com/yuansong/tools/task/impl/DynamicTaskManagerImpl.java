@@ -1,5 +1,6 @@
 package com.yuansong.tools.task.impl;
 
+import java.text.MessageFormat;
 import java.util.concurrent.ScheduledFuture;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +39,7 @@ public class DynamicTaskManagerImpl implements IDynamicTaskManager {
     }
 
 	@Override
-	public void addTask(IDynamicTask task) {
+	public void addTask(IDynamicTask task) throws Exception {
 		synchronized(configManager) {
 			String taskName = task.getName();
 			this.removeTask(taskName);
@@ -72,10 +73,24 @@ public class DynamicTaskManagerImpl implements IDynamicTaskManager {
 	}
 
 	@Override
-	public void resumeTask(String name) {
+	public void resumeTask(String name) throws Exception {
 		synchronized(taskManager) {
-			if(!this.taskManager.containsKey(name)) {
-				return;
+			this.pauseTask(name);
+			this.startTask(name);
+		}
+	}
+	
+	private void startTask(String name) throws Exception {
+		synchronized(configManager) {
+			if(!configManager.containsKey(name)) {
+				throw new Exception(MessageFormat.format("task {0} is not exists", name));
+			}
+			IDynamicTask config = this.configManager.getObject(name);
+			ScheduledFuture<?> s = this.threadPoolTaskScheduler.schedule(config, new CronTrigger(config.getCron()));
+			if(s != null) {
+				this.taskManager.register(name, s);
+			} else {
+				throw new Exception(MessageFormat.format("task {0} start error", name));
 			}
 		}
 	}
