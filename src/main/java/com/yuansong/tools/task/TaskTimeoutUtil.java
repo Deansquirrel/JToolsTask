@@ -1,4 +1,4 @@
-package com.yuansong.tools.task.his;
+package com.yuansong.tools.task;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -7,7 +7,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
-public class TimeoutUtil {
+public class TaskTimeoutUtil {
 	
 	private static ThreadPoolTaskScheduler threadPoolTaskScheduler = null;
 	

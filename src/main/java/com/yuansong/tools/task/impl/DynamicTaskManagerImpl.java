@@ -1,116 +1,110 @@
 package com.yuansong.tools.task.impl;
 
 import java.text.MessageFormat;
-import java.util.concurrent.ScheduledFuture;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
-import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 import com.yuansong.tools.common.ObjectManager;
-import com.yuansong.tools.task.IDynamicTask;
+import com.yuansong.tools.task.AbstractDynamicTask;
 import com.yuansong.tools.task.IDynamicTaskManager;
 
 @Component
 public class DynamicTaskManagerImpl implements IDynamicTaskManager {
 	
 	@Autowired
+	@Qualifier("dynamicTaskSecheduler")
 	private ThreadPoolTaskScheduler threadPoolTaskScheduler;
 	
-	private ObjectManager<IDynamicTask> configManager;
-	
-	private ObjectManager<ScheduledFuture<?>> taskManager;
+	private ObjectManager<AbstractDynamicTask> _list;
 	
 	public DynamicTaskManagerImpl() {
-		this.configManager = new ObjectManager<IDynamicTask>();
-		this.taskManager = new ObjectManager<ScheduledFuture<?>>();
+		_list = new ObjectManager<AbstractDynamicTask>();
 	}
-	
-	@Bean
-    public ThreadPoolTaskScheduler threadPoolTaskScheduler() {
-		ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
-		threadPoolTaskScheduler.setPoolSize(10);
-		threadPoolTaskScheduler.setThreadNamePrefix("dynamicTask-");
-		threadPoolTaskScheduler.setWaitForTasksToCompleteOnShutdown(true);
-		threadPoolTaskScheduler.setAwaitTerminationSeconds(60);
-        return threadPoolTaskScheduler;
-    }
 
 	@Override
-	public void addTask(IDynamicTask task) throws Exception {
-		synchronized(configManager) {
-			String taskName = task.getName();
-			this.removeTask(taskName);
-			this.configManager.register(taskName, task);
-			this.resumeTask(taskName);
+	public void add(AbstractDynamicTask task, String cron) throws Exception {
+		synchronized(_list) {
+			if(_list.containsKey(task.getName())) {
+				throw new Exception(MessageFormat.format("task 【{0}】 is already exists", task.getName()));
+			}
+			task.start(this.threadPoolTaskScheduler, cron);
+			_list.register(task.getName(), task);
 		}
 	}
 
 	@Override
-	public synchronized void removeTask(String name) {
-		synchronized(configManager) {
-			String taskName = name;
-			this.pauseTask(taskName);
-			if(this.configManager.containsKey(taskName)) {
-				this.removeTask(taskName);
+	public void remove(String name) {
+		synchronized(_list) {
+			if(_list.containsKey(name)) {
+				_list.getObject(name).stop();
+				_list.unregister(name);
 			}
 		}
 	}
 
 	@Override
-	public void pauseTask(String name) {
-		synchronized(taskManager) {
-			if(this.taskManager.containsKey(name)) {
-				ScheduledFuture<?> task = this.taskManager.getObject(name);
-				if(task != null) {
-					task.cancel(false);
-				}
-				this.taskManager.unregister(name);
+	public void pause(String name) {
+		synchronized(_list) {
+			if(_list.containsKey(name)) {
+				_list.getObject(name).stop();
 			}
 		}
 	}
 
 	@Override
-	public void resumeTask(String name) throws Exception {
-		synchronized(taskManager) {
-			this.pauseTask(name);
-			this.startTask(name);
-		}
-	}
-	
-	private void startTask(String name) throws Exception {
-		synchronized(configManager) {
-			if(!configManager.containsKey(name)) {
-				throw new Exception(MessageFormat.format("task {0} is not exists", name));
+	public void start(String name) throws Exception {
+		synchronized(_list) {
+			if(!_list.containsKey(name)) {
+				throw new Exception(MessageFormat.format("task 【{0}】 is not exists", name));
 			}
-			IDynamicTask config = this.configManager.getObject(name);
-			ScheduledFuture<?> s = this.threadPoolTaskScheduler.schedule(config, new CronTrigger(config.getCron()));
-			if(s != null) {
-				this.taskManager.register(name, s);
-			} else {
-				throw new Exception(MessageFormat.format("task {0} start error", name));
+			AbstractDynamicTask task = _list.getObject(name);
+			if(task.getCron() == null || task.getCron() == "") {
+				throw new Exception("cron can not be null or empty");
 			}
+			task.start(this.threadPoolTaskScheduler, task.getCron());
 		}
 	}
 
 	@Override
-	public boolean isTaskRunning(String name) {
-		// TODO Auto-generated method stub
-		return false;
+	public void start(String name, String cron) throws Exception {
+		synchronized(_list) {
+			if(!_list.containsKey(name)) {
+				throw new Exception(MessageFormat.format("task 【{0}】 is not exists", name));
+			}
+			_list.getObject(name).start(this.threadPoolTaskScheduler, cron);
+		}
 	}
 
 	@Override
-	public String getTask(String name) {
-		// TODO Auto-generated method stub
-		return null;
+	public boolean isStarted(String name) {
+		if(this.containTask(name)) {
+			return this._list.getObject(name).isStarted();
+		} else {
+			return false;
+		}
+	}
+
+	@Override
+	public boolean isRunning(String name) {
+		if(this.containTask(name)) {
+			return this._list.getObject(name).isRunning();
+		} else {
+			return false;
+		}
 	}
 
 	@Override
 	public boolean containTask(String name) {
-		// TODO Auto-generated method stub
-		return false;
+		return this._list.containsKey(name);
 	}
-	
+
+	@Override
+	public Set<String> getTaskList() {
+		return this._list.keyList();
+	}
+
 }
