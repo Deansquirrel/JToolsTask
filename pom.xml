@@ -4,8 +4,8 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.yuansong.tools</groupId>
   <artifactId>tools-task</artifactId>
-  <version>0.0.2</version>
-  <!--<version>0.0.0</version> -->
+  <!--<version>0.0.2</version>-->
+  <version>0.0.0</version> 
   <name>tools-task</name>
   <description>tools task</description>
 
