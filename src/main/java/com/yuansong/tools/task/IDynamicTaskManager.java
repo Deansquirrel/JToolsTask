@@ -15,13 +15,19 @@ public interface IDynamicTaskManager {
 	 * 移除任务
 	 * @param name
 	 */
-	public void remove(String name);
+	default public void remove(String name) {
+		this.remove(name, false);
+	}
+	public void remove(String name, boolean mayInterruptIfRunning);
 	
 	/**
 	 * 暂停任务
 	 * @param name
 	 */
-	public void pause(String name);
+	default public void pause(String name) {
+		this.pause(name, false);
+	}
+	public void pause(String name, boolean mayInterruptIfRunning);
 	
 	/**
 	 * 恢复任务

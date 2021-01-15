@@ -37,20 +37,20 @@ public class DynamicTaskManagerImpl implements IDynamicTaskManager {
 	}
 
 	@Override
-	public void remove(String name) {
+	public void remove(String name, boolean mayInterruptIfRunning) {
 		synchronized(_list) {
 			if(_list.containsKey(name)) {
-				_list.getObject(name).stop();
+				_list.getObject(name).stop(mayInterruptIfRunning);
 				_list.unregister(name);
 			}
 		}
 	}
 
 	@Override
-	public void pause(String name) {
+	public void pause(String name, boolean mayInterruptIfRunning) {
 		synchronized(_list) {
 			if(_list.containsKey(name)) {
-				_list.getObject(name).stop();
+				_list.getObject(name).stop(mayInterruptIfRunning);
 			}
 		}
 	}

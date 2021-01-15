@@ -19,15 +19,22 @@ public abstract class AbstractDynamicTask implements Runnable {
 	private long _lastStart = 0L;
 	private long _lastEnd = 0L;
 	private boolean _running = false;
-	private String _cron = "";
 	
 	private ScheduledFuture<?> _future = null;
-				
+	
+	private String _cron = "";
+	
 	/**
 	 * 任务名称
 	 * @return
 	 */
 	public abstract String getName();
+	
+	/**
+	 * 是否可以启动执行
+	 * @return
+	 */
+	public abstract boolean getRight();
 			
 	/**
 	 * 之前前处理
@@ -44,6 +51,10 @@ public abstract class AbstractDynamicTask implements Runnable {
 	 */
 	protected abstract void suffixJob();
 	
+	/**
+	 * 定时任务的时间公式
+	 * @return
+	 */
 	public String getCron() {
 		return _cron;
 	}	
@@ -87,7 +98,7 @@ public abstract class AbstractDynamicTask implements Runnable {
 	protected ScheduledFuture<?> getScheduledFuture() {
 		return _future;
 	}
-	
+		
 	/**
 	 * 启动
 	 * @throws Exception
@@ -104,16 +115,20 @@ public abstract class AbstractDynamicTask implements Runnable {
 	/**
 	 * 停止
 	 */
-	public synchronized void stop() {
+	public synchronized void stop(boolean mayInterruptIfRunning) {
 		if(this._future != null) {
-			this._future.cancel(false);
+			this._future.cancel(mayInterruptIfRunning);
 			this._future = null;
+			logger.info(MessageFormat.format("task 【{0}】 is stopped", this.getName()));
 		}
 	}
 
 	@Override
 	public void run() {
 		//==============================================
+		if(this.getRight() == false) {
+			return;
+		}
 		//如运行中，则跳过执行
 		if(this.isRunning()) {
 			return;
@@ -132,7 +147,7 @@ public abstract class AbstractDynamicTask implements Runnable {
 			logger.error(MessageFormat.format("task 【{0}】【{1}】 error: {2}", this.getName(), taskId, e.getMessage()));
 			logger.error(ExceptionTool.getStackTrace(e));
 		}
-		logger.info(MessageFormat.format("task 【{0}】【{1}】 findshed", this.getName(), taskId));
+		logger.info(MessageFormat.format("task findshed 【{0}】【{1}】", this.getName(), taskId));
 		//==============================================
 		this._running = false;
 		this._lastEnd = (new Date()).getTime();
